@@ -3,6 +3,7 @@
 const express = require('express');
 const bodyParser = require('body-parser'); //take json into object, attach on request object
 const {ObjectID} = require('mongodb');
+const PORT = process.env.PORT || 3000 ;
 
 const {mongoose} = require('./db/mongoose');
 const {Todo} = require('./models/todo');
@@ -47,8 +48,8 @@ app.get('/todos/:id', (req, res)=>{
 
 
 
-app.listen(3000,()=>{
-    console.log('server start');
+app.listen(PORT,()=>{
+    console.log(`server start at ${PORT}`);
 })
 
 module.exports = {
