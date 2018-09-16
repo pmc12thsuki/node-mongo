@@ -10,13 +10,13 @@ MongoClient.connect('mongodb://localhost:27017/TodoApp',(err, db)=>{ // specify 
     console.log("Connect to MongoDb server");
 
     // add a collection and insert a document into this collection in TodoApp db
-    // db.collection('Todos').insertOne({
-    //     text: "Something",
-    //     completed: false
-    // }, (err, result)=>{
-    //     if(err) return console.log(err);
-    //     console.log(JSON.stringify(result.ops, undefined, 2)) // result.ops is the document we insert
-    // });
+    db.collection('Todos').insertOne({
+        text: "Something",
+        completed: false
+    }, (err, result)=>{
+        if(err) return console.log(err);
+        console.log(JSON.stringify(result.ops, undefined, 2)) // result.ops is the document we insert
+    });
 
 
     db.collection('Users').insertOne({
