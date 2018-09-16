@@ -30,7 +30,7 @@ describe('Post /todos',()=>{
         .send({text}) //send data for post request
         .expect(200) //check status code correct
         .expect((res)=>{
-            expect(res.body.text).toBe(text); // check response correct
+            expect(res.body.todo.text).toBe(text); // check response correct
         })
         .end((err, res)=>{  //not end yet, need to check db
             if(err) return done(err);
