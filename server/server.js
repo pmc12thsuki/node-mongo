@@ -95,6 +95,20 @@ app.patch('/todos/:id', (req, res)=>{
     })
 })
 
+app.post('/users',(req, res)=>{
+
+    const body = _.pick(req.body,['email','password']); //pick up the field that we allows user to update, then if user send _id in request body, we wont and should not upadte it.
+    const user = new User(body);
+
+    user.save().then(()=>{
+        return user.generateAuthToken(); // user without token
+    }).then(token=>{
+        res.header('x-auth', token).send({user}); // user with token
+    }).catch(err=>{
+        res.status(400).send(err);
+    })
+})
+
 
 
 app.listen(PORT,()=>{

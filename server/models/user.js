@@ -1,14 +1,72 @@
 'use strict';
 const mongoose = require('mongoose');
+const validator = require('validator');
+const jwt = require('jsonwebtoken');
+const _ = require('lodash');
 
-const User = mongoose.model('User',{
+// if we want to add instance mothed on Model, we need to create model by Schema
+const UserSchema = new mongoose.Schema(
+    {
     email:{
         type: String,
         required: true,
         minlength: 1,
-        trim: true
-    }
+        trim: true,
+        unique: true,
+        validate:{
+            validator: validator.isEmail,
+            // return true or false, equal to 
+            // value =>  validator.isEmail(value);
+            message: '{VALUE} is not a valid email'
+        }
+    },
+    password: {
+        type: String,
+        required: true,
+        minlength: 6
+    },
+    tokens:[{  // Array type is valid in mongoDB, may not valid in others 
+        access:{
+            type: String,
+            required: true
+        },
+        token:{
+            type: String,
+            required: true
+        }
+    }]
 })
+
+//override toJSON function, this function will called when convert mongoose model to JSON value
+UserSchema.methods.toJSON = function(){ 
+    // we dont want to send 'password' and 'tokens' to user
+    const user = this;
+    const userObject = user.toObject(); // a function that convert user into a regular object where only the properties avaliable on the document exist
+    return _.pick(userObject,['_id','email']); // return only id and email
+};
+
+
+//add instances method on UserSchema. instances method is different with model methods, instances need some instances data inside
+UserSchema.methods.generateAuthToken = function(){
+    //method function can bind this, but arrow function cannot
+    const user = this;
+    const access = 'auth';
+    const token = jwt.sign({
+        _id: user._id.toHexString(),
+        access
+     }, 'abc123').toString();
+
+     // push token into user.tokens, but push may cause error in mongodb, so use concat instead
+     user.tokens = user.tokens.concat([{access, token}]);
+
+     // return a token (a promise that return a token) when server called this function
+     return user.save().then(()=>{
+         return token;
+     });
+}
+
+
+const User = mongoose.model('User',UserSchema);
 
 module.exports = {
     User
