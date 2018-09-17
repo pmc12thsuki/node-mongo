@@ -1,5 +1,7 @@
 'use strict';
 
+require('./config/config');
+
 const express = require('express');
 const bodyParser = require('body-parser'); //take json into object, attach on request object
 const {ObjectID} = require('mongodb');
