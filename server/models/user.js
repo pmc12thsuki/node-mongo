@@ -49,7 +49,7 @@ UserSchema.methods.toJSON = function(){
 //add instances method on UserSchema. instances method is different with model methods, instances need some instances data inside
 UserSchema.methods.generateAuthToken = function(){
     //method function can bind this, but arrow function cannot
-    const user = this;
+    const user = this; // binding to instance
     const access = 'auth';
     const token = jwt.sign({
         _id: user._id.toHexString(),
@@ -63,6 +63,28 @@ UserSchema.methods.generateAuthToken = function(){
      return user.save().then(()=>{
          return token;
      });
+}
+
+// add a Model method
+UserSchema.statics.findByToken = function(token){
+    const User = this; // binding to model
+    var decoded;
+
+    try{
+        decoded = jwt.verify(token, 'abc123')
+    }catch(e){ 
+        return Promise.reject(); // if not a valid token, then reject it
+        // Promise.reject() is equal to below: 
+        // new Promise((resolve, reject)=>{ 
+        //     reject();
+        // });
+    }
+
+    return User.findOne({ // return a promise
+        _id: decoded._id,
+        'tokens.token': token, //find in tokens array with token object that equal to the token argument passed in above
+        'tokens.access': 'auth'
+    });
 }
 
 
