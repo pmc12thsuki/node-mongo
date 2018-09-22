@@ -3,7 +3,7 @@ const mongoose = require('mongoose');
 const validator = require('validator');
 const jwt = require('jsonwebtoken');
 const _ = require('lodash');
-
+const bcrypt = require('bcryptjs');
 // if we want to add instance mothed on Model, we need to create model by Schema
 const UserSchema = new mongoose.Schema(
     {
@@ -87,6 +87,22 @@ UserSchema.statics.findByToken = function(token){
     });
 }
 
+
+// add middleware for user schema (hash password)
+UserSchema.pre('save', function(next){ // a middleware called before save
+    // before a document saved, we want to hash user password
+    const user = this;
+    if(user.isModified('password')){ // only hash password when user password is modify, otherwise the password will be hased again
+        bcrypt.genSalt(10, (err, salt)=>{
+            bcrypt.hash(user.password, salt, (err, hash)=>{
+                user.password = hash;
+                next();
+            })
+        })
+    }else{
+        next();
+    }
+})
 
 const User = mongoose.model('User',UserSchema);
 

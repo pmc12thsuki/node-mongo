@@ -19,7 +19,7 @@ app.use(bodyParser.json());
 
 app.post('/todos',(req, res)=>{
     const todo = new Todo({
-        text: req.body.text // req.body is save by bodyParser
+        text: req.body.text // req.body is parsed and save by bodyParser
     })
     todo.save().then(todo=>{
         res.send({todo});
