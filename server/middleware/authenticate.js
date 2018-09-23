@@ -9,7 +9,7 @@ const authenticate = (req, res, next) =>{
         if(!user){
             return Promise.reject(); // instead of writing res.status(401).send(), we can return a reject so the catch block will be execute
         }
-        // attach user we found and token in req
+        // attach user and token we found in req
         req.user = user;
         req.token = token;
         next();

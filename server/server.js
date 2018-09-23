@@ -113,7 +113,8 @@ app.post('/users',(req, res)=>{
 
 // private route which check for auth(x-auth in header) first
 app.get('/users/me', authenticate, (req, res)=>{
-    res.send(req.user);
+    const user = req.user;
+    res.send({user});
 })
 
 

@@ -5,23 +5,13 @@ const {ObjectID} = require('mongodb');
 
 const {app} = require('./../server');
 const {Todo} = require('./../models/todo');
-
-const todos =[{
-    _id: new ObjectID(),
-    text: 'first todo'
-},{
-    _id: new ObjectID(),
-    text: 'second todo',
-    completed: true,
-    completedAt: 333
-}];
+const {User} = require('./../models/user');
+const {todos, populateTodos, users, populateUsers} = require('./seed/seed');
 
 
-beforeEach((done)=>{ //setup environment (default db) before test 
-    Todo.remove({}).then(()=> { // clear our db, remove all documents in Todo collection
-        return Todo.insertMany(todos); // add default todos
-    }).then(()=>done()) 
-})
+
+beforeEach(populateUsers);
+beforeEach(populateTodos);
 
 describe('Post /todos',()=>{
     it('should create a new todo',(done)=>{
@@ -173,6 +163,72 @@ describe('PATCH /todos/:ids',()=>{
             expect(res.body.todo.completed).toBe(false);
             expect(res.body.todo.completedAt).toNotExist();
         })
+        .end(done);
+    })
+});
+
+describe('GET /users/me',()=>{
+    it('should return user if authenticated', done=>{
+        request(app)
+        .get('/users/me')
+        .set('x-auth', users[0].tokens[0].token) // set headers
+        .expect(200)
+        .expect(res=>{
+            expect(res.body.user._id).toBe(users[0]._id.toHexString());
+            expect(res.body.user.email).toBe(users[0].email);
+        })
+        .end(done);
+    })
+
+    it('should return 402 if not authenticated', done=>{
+        request(app)
+        .get('/users/me')
+        .expect(401)
+        .expect(res=>{
+            expect(res.body).toEqual({}); // send an empty object back
+        })
+        .end(done);
+    })
+})
+
+describe('POST /users', ()=>{
+    const user = {email:'test@gmail.com', password: 'testUser'}
+    it('should create a user', done=>{
+        request(app)
+        .post('/users')
+        .send(user)
+        .expect(200)
+        .expect(res=>{
+            expect(res.headers['x-auth']).toExist(); // check auth exist in header
+            expect(res.body.user._id).toExist();
+            expect(res.body.user.email).toBe(user.email);
+        })
+        .end((err, res)=>{
+            if(err) return done(err);
+
+            User.findOne({email: user.email}).then(result_user=>{
+                expect(result_user).toExist();
+                expect(result_user.password).toNotBe(user.password); // because we hashed the password
+                done();
+            })
+        })
+    })
+
+    it('should return validation errors if request invalid', done=>{
+        const user = {email:'123', password:"test"};
+        request(app)
+        .post('/users')
+        .send(user)
+        .expect(400)
+        .end(done);
+    })
+
+    it('should not create user if email in use', done=>{
+        const user = {email:users[0].email, password:'testUser'};
+        request(app)
+        .post('/users')
+        .send(user)
+        .expect(400)
         .end(done);
     })
 })
