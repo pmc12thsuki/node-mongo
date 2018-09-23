@@ -11,7 +11,6 @@ const {mongoose} = require('./db/mongoose');
 const {Todo} = require('./models/todo');
 const {User} = require('./models/user');
 const {authenticate} = require('./middleware/authenticate');
-const bcrypt = require('bcryptjs');
 
 const app = express();
 const PORT = process.env.PORT || 3000 ;
@@ -128,6 +127,14 @@ app.post('/users/login', (req, res)=>{
     })
     .catch(err=>{
         console.log(err)
+        res.status(400).send();
+    })
+})
+
+app.delete('/users/me/token', authenticate, (req, res)=>{
+    req.user.removeToken(req.token).then(()=>{
+        res.status(200).send();
+    },err=>{
         res.status(400).send();
     })
 })

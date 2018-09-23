@@ -210,6 +210,8 @@ describe('POST /users', ()=>{
                 expect(result_user).toExist();
                 expect(result_user.password).toNotBe(user.password); // because we hashed the password
                 done();
+            }).catch(err=>{
+                done(err);
             })
         })
     })
@@ -230,5 +232,72 @@ describe('POST /users', ()=>{
         .send(user)
         .expect(400)
         .end(done);
+    })
+})
+
+describe('POST /users/login', ()=>{
+    it('should login user and return auth token',done=>{
+        const user = {email: users[1].email, password: users[1].password};
+        request(app)
+        .post('/users/login')
+        .send(user)
+        .expect(200)
+        .expect(res=>{
+            expect(res.headers['x-auth']).toExist();
+            expect(res.body.user._id).toExist();
+            expect(res.body.user.email).toBe(users[1].email);
+        })
+        .end((err, res)=>{
+            if(err) return done(err);
+
+            User.findById(users[1]._id).then(result_user=>{
+                expect(result_user.tokens[0]).toInclude({ // dont need to be excetly the same, but include some property
+                    access: 'auth',
+                    token: res.header['x-auth']
+                })
+                done();
+            }).catch(err=>{
+                done(err);
+            })
+        });
+    })
+
+    it('should reject invalid login', done=>{
+        const user = {email: users[1].email, password: 'wrongPassword'};
+        request(app)
+        .post('/users/login')
+        .send(user)
+        .expect(400)
+        .expect(res=>{
+            expect(res.headers['x-auth']).toNotExist();
+        })
+        .end((err, res)=>{
+            if(err) return done(err);
+            
+            User.findById(users[1]._id).then(result_user=>{
+                expect(result_user.tokens.length).toBe(0);
+                done();
+            }).catch(err=>{
+                done(err);
+            })
+        })
+    })
+})
+
+describe('DELETE /users/me/token', ()=>{
+    it('should remove auth token on logout', done=>{
+        request(app)
+        .delete('/users/me/token')
+        .set('x-auth', users[0].tokens[0].token)
+        .expect(200)
+        .end((err, res)=>{
+            if(err) return done(err);
+            User.findById(users[0]._id).then(user=>{
+                expect(user.tokens.length).toBe(0);
+                done();
+            }).catch(err=>{
+                done(err);
+            })
+        })
     })
 })
