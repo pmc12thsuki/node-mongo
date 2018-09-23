@@ -10,7 +10,8 @@ const _ = require('lodash');
 const {mongoose} = require('./db/mongoose');
 const {Todo} = require('./models/todo');
 const {User} = require('./models/user');
-const {authenticate} = require('./middleware/authenticate')
+const {authenticate} = require('./middleware/authenticate');
+const bcrypt = require('bcryptjs');
 
 const app = express();
 const PORT = process.env.PORT || 3000 ;
@@ -117,6 +118,19 @@ app.get('/users/me', authenticate, (req, res)=>{
     res.send({user});
 })
 
+// login route
+app.post('/users/login', (req, res)=>{
+    const body = _.pick(req.body, ['email','password']);
+    User.findByCredentials(body.email, body.password).then(user=>{
+        return user.generateAuthToken().then(token=>{ // need to chain then in here so we can access both user and token
+            res.header('x-auth', token).send({user}); // user with token
+        })
+    })
+    .catch(err=>{
+        console.log(err)
+        res.status(400).send();
+    })
+})
 
 
 app.listen(PORT,()=>{
