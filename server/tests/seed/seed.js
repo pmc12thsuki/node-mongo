@@ -4,21 +4,6 @@ const {Todo} = require('../../models/todo');
 const {User} = require('../../models/user');
 const jwt = require('jsonwebtoken');
 
-const todos =[{
-    _id: new ObjectID(),
-    text: 'first todo'
-},{
-    _id: new ObjectID(),
-    text: 'second todo',
-    completed: true,
-    completedAt: 333
-}];
-
-const populateTodos = done =>{ //a function to setup environment (default db) before test 
-    Todo.remove({}).then(()=> { // clear our db, remove all documents in Todo collection
-        return Todo.insertMany(todos); // add default todos
-    }).then(()=>done()) 
-}
 
 // users
 const userOneId = new ObjectID();
@@ -36,6 +21,10 @@ const users = [{
     _id: userTwoId,
     email: 'user2@gmail.com',
     password: 'userTwoPass',
+    tokens: [{
+        access: 'auth',
+        token: jwt.sign({_id: userTwoId, access: 'auth'}, 'abc123').toString()
+        }]
 }]
 
 const populateUsers = done =>{
@@ -49,5 +38,26 @@ const populateUsers = done =>{
         })
     })
 }
+
+// todos
+const todos =[{
+    _id: new ObjectID(),
+    text: 'first todo',
+    _creator: userOneId
+},{
+    _id: new ObjectID(),
+    text: 'second todo',
+    completed: true,
+    completedAt: 333,
+    _creator: userTwoId
+}];
+
+const populateTodos = done =>{ //a function to setup environment (default db) before test 
+    Todo.remove({}).then(()=> { // clear our db, remove all documents in Todo collection
+        return Todo.insertMany(todos); // add default todos
+    }).then(()=>done()) 
+}
+
+
 
 module.exports = {todos, populateTodos, users, populateUsers};

@@ -17,9 +17,10 @@ const PORT = process.env.PORT || 3000 ;
 
 app.use(bodyParser.json());
 
-app.post('/todos',(req, res)=>{
+app.post('/todos', authenticate, (req, res)=>{
     const todo = new Todo({
-        text: req.body.text // req.body is parsed and save by bodyParser
+        text: req.body.text, // req.body is parsed and save by bodyParser
+        _creator: req.user._id
     })
     todo.save().then(todo=>{
         res.send({todo});
@@ -28,20 +29,25 @@ app.post('/todos',(req, res)=>{
     })
 })
 
-app.get('/todos',(req, res)=>{
-    Todo.find().then(todos=>{
+app.get('/todos', authenticate, (req, res)=>{
+    Todo.find({
+        _creator: req.user._id // only return todo which was created by that user
+    }).then(todos=>{
         res.send({todos}); // send result back in object
     },e=>{
         res.status(400).send(e);
     })
 })
 
-app.get('/todos/:id', (req, res)=>{
+app.get('/todos/:id', authenticate, (req, res)=>{
     const id = req.params.id;
     if(!ObjectID.isValid(id)){ // valid id
         return res.status(404).send();
     }
-    Todo.findById(id).then(todo=>{
+    Todo.findOne({
+        _id: id,
+        _creator: req.user._id
+    }).then(todo=>{
         if(!todo){
             return res.status(404).send();
         }
@@ -51,12 +57,15 @@ app.get('/todos/:id', (req, res)=>{
     })
 })
 
-app.delete('/todos/:id', (req, res)=>{
+app.delete('/todos/:id', authenticate, (req, res)=>{
     const id = req.params.id;
     if(!ObjectID.isValid(id)){
         return res.status(404).send();
     }
-    Todo.findByIdAndRemove(id).then(todo=>{
+    Todo.findOneAndRemove({
+        _id: id,
+        _creator: req.user._id
+    }).then(todo=>{
         if(!todo){
             return res.status(404).send();
         }
@@ -67,7 +76,7 @@ app.delete('/todos/:id', (req, res)=>{
 })
 
 //update
-app.patch('/todos/:id', (req, res)=>{
+app.patch('/todos/:id', authenticate, (req, res)=>{
     const id = req.params.id;
     const body = _.pick(req.body,['text','completed']); //pick up the field that we allows user to update, then if user send _id in request body, we wont and should not upadte it.
     
@@ -81,7 +90,10 @@ app.patch('/todos/:id', (req, res)=>{
         body.completedAt = null;
     }
 
-    Todo.findByIdAndUpdate(id, {
+    Todo.findOneAndUpdate({
+        _id: id,
+        _creator: req.user._id
+    }, {
         $set: body // use set operator to update field
     },{
         new: true // return new instead of return original document, same as returnOriginal
